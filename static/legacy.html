@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#151917">
+  <title>Jarvis — Home console</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#command">Skip to command</a>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="System details">
+      <a class="brand" href="/" aria-label="Jarvis home"><span class="brand-mark" aria-hidden="true">J</span><span>JARVIS<small>HOME ASSISTANT</small></span></a>
+      <details id="system-details"><summary>Connection, tools &amp; reminders</summary>
+      <section class="system-section" aria-labelledby="connection-heading">
+        <h2 id="connection-heading">Connection</h2>
+        <p class="connection"><span id="connection-dot" class="status-dot" aria-hidden="true"></span><span id="connection-status">Checking connection…</span></p>
+        <dl class="system-list"><div><dt>Model</dt><dd id="model-status">Not checked</dd></div><div><dt>Voice input</dt><dd id="voice-capability">Checking browser…</dd></div></dl>
+        <button id="refresh-status" type="button" class="quiet">Refresh connection</button>
+      </section>
+      <section class="system-section" aria-labelledby="capabilities-heading"><h2 id="capabilities-heading">Available tools</h2><ul id="capabilities" class="tool-list"><li>Connect to discover tools.</li></ul></section>
+      <section class="system-section reminders-section" aria-labelledby="reminders-heading"><div class="section-heading"><h2 id="reminders-heading">Reminders</h2><button id="refresh-reminders" class="quiet compact" type="button" aria-label="Refresh reminders">↻</button></div><p id="reminder-status" class="muted">Not connected.</p><ul id="reminders" class="reminder-list"></ul></section>
+      </details>
+    </aside>
+    <main class="main-panel">
+      <header class="topbar"><div><span class="eyebrow">HOME / COMMAND</span><h1>Good to hear from you.</h1></div><span class="session-label">Browser session</span></header>
+      <section id="login-panel" class="login-panel" aria-labelledby="login-heading" hidden>
+        <div><h2 id="login-heading">Connect to your Jarvis</h2><p>Enter the access token configured on your server. It is sent only to this server and is not saved by this page.</p></div>
+        <form id="login-form"><label for="token">Access token</label><div class="input-row"><input id="token" name="token" type="password" autocomplete="off" spellcheck="false" required><button id="login-submit" type="submit" class="primary">Connect</button></div><p id="login-error" class="error-text" role="alert"></p></form>
+      </section>
+      <section class="voice-strip" aria-label="Microphone controls">
+        <div id="mic-indicator" class="mic-indicator" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M6 11v1a6 6 0 0 0 12 0v-1M12 18v3M8 21h8"/></svg></div>
+        <div class="voice-copy"><h2 id="mic-state">Microphone off</h2><p id="mic-description">Type below, or enable your microphone.</p></div>
+        <div class="voice-actions"><button id="start-conversation" class="primary" type="button">Start conversation</button><button id="mic-toggle" type="button" aria-pressed="false">Enable mic</button><button id="record-toggle" type="button" hidden>Record command</button><button id="stop-speaking" class="quiet" type="button" hidden>Stop speaking</button></div>
+      </section>
+      <p class="quick-help"><strong>Start conversation → speak → Stop Jarvis</strong><br>Allow the mic when asked. Wait for “Active” and the greeting to finish, then speak without a wake name. Stop mic turns it off.</p>
+      <p class="heard-line"><span>Last heard (on this page):</span> <output id="heard-transcript" aria-live="off">Nothing yet.</output></p>
+      <p id="voice-output-status" class="muted" role="status">Voice output uses your browser.</p>
+      <details id="voice-options"><summary>Voice settings · language &amp; volume</summary>
+      <div class="voice-settings"><label for="voice-volume">Voice volume</label><input id="voice-volume" type="range" min="0" max="100" step="1" value="80" aria-describedby="volume-value"><output id="volume-value" for="voice-volume" aria-live="polite">80%</output><button id="test-voice" type="button" class="quiet">Test voice</button></div>
+      <div class="voice-settings"><label for="voice-language">Voice language</label><select id="voice-language" aria-describedby="language-help"></select><label for="voice-language-custom" class="sr-only">Custom BCP 47 language tag</label><input id="voice-language-custom" type="text" placeholder="BCP 47, e.g. pt-BR" maxlength="40" hidden></div>
+      <p id="language-help" class="muted">Choose the language you speak (default English · India). Browser recognition is not universal automatic language detection; support and installed speaking voices vary. Whisper push-to-talk can detect language automatically. You can also say “Jarvis change language to Hindi”, “जार्विस भाषा हिंदी”, or “జార్విస్ భాష తెలుగు”.</p>
+      </details>
+      <details class="privacy-note"><summary>Help · voice &amp; privacy</summary>
+        <ol><li>Connect to Jarvis, open this page over HTTPS or localhost, and select <strong>Enable mic</strong>. Choose <strong>Allow</strong> in the browser microphone prompt. If denied, open this site’s permissions, allow Microphone, then select Enable mic again.</li><li>Check <strong>Talk mode · speak replies</strong> for spoken answers. Select <strong>Test voice</strong> to try a short greeting, including in text mode. Check your device sound if you hear nothing.</li><li>Say “Jarvis” once, or start your request with “Jarvis”. After each answer finishes, keep talking without another wake word. All subsequent speech is treated as conversation until you say <strong>stop Jarvis</strong> or <strong>Jarvis stop listening</strong>. These end the conversation, stop playback, and leave the wake detector listening. Use headphones to reduce speaker echo.</li></ol>
+        <p>Exact local controls: <strong>stop</strong>, <strong>stop speaking</strong>, <strong>stop talking</strong>, or <strong>quiet</strong> interrupt even without a wake word, but keep your conversation active. Say <strong>Jarvis increase volume</strong>, <strong>Jarvis decrease volume</strong> (10 percentage points), <strong>Jarvis set volume to 50 percent</strong>, <strong>Jarvis mute</strong>, <strong>Jarvis unmute</strong>, <strong>Jarvis talk mode</strong>, or <strong>Jarvis text mode</strong>. Other controls need “Jarvis” unless your conversation is active or explicitly recorded with push-to-talk. Ordinary sentences containing “stop” are not interruption commands. Wake aliases include जार्विस, जारविस, జార్విస్, and ஜார்விஸ். Hindi “रुको” and Telugu “ఆపు” interrupt; “जार्विस सुनना बंद करो” and “జార్విస్ వినడం ఆపు” end the conversation.</p>
+        <p>During playback or a pending reply, only these local controls are handled; other recognized speech is ignored. Controls act on final recognition results, so interruption speed and simultaneous listening depend on your browser and microphone. Echo can still resemble a control. Stop cancels voice and keeps a pending reply as text; it does not undo server actions. Your next explicit request can speak again. Text mode leaves the enabled mic listening; <strong>Stop mic</strong> turns listening off.</p>
+        <p>Volume controls only Jarvis browser speech, not system volume. Changing active speech volume resumes at the last reported word (that word may repeat); if the browser reports no position, playback stops instead of repeating the entire answer.</p>
+        <p id="voice-privacy">Browser speech recognition may be processed by your browser’s provider. This page forwards only awake requests to your server, never these exact local controls. Push-to-talk uploads each explicit recording for transcription first, then handles local controls without sending them to chat. It cannot listen during playback: <strong>Tap Stop speaking</strong> to interrupt. Select Record command, speak, then Stop &amp; send; Stop mic discards an unfinished recording.</p>
+        <p>Keep this tab open and visible. Background tabs, mobile screen lock, and browser policies can suspend listening. Stopping the mic, hiding the tab, or losing authentication ends the conversation. Returning never enables the mic automatically. Voice replies use your browser’s speech service. Typed chat works without a microphone.</p>
+        <p>When permission is required, review the exact tool and arguments, then listen to the complete spoken summary. Only the current action’s exact phrase (for example “approve 4821”) can authorize it by voice after the entire playback finishes. Interrupting the summary leaves approval button-only. Exact action summaries retain message content, including emoji and URLs. Approvals during playback or a pending request are ignored. Generic yes / हाँ / అవును never authorizes a coded action. Say “cancel action”, “no”, “नहीं”, or “వద్దు” to deny the pending action after playback. “stop” only interrupts; it never approves or cancels a server action. If the server supplies no voice phrase, or speech is unavailable, use <strong>Approve action</strong> or <strong>Cancel</strong>. Messages, files, and commands are never automatically approved. Public research answers may be spoken without an approval prompt; links remain visible below.</p>
+      </details>
+      <section class="conversation" aria-labelledby="conversation-heading"><div class="conversation-heading"><h2 id="conversation-heading">Conversation</h2><label class="speech-preference"><input id="speak-replies" type="checkbox" checked> Talk mode · speak replies</label></div>
+        <div id="messages" class="messages" role="log" aria-live="polite" aria-relevant="additions" tabindex="0"><div id="welcome" class="welcome"><span class="eyebrow">READY WHEN YOU ARE</span><h3>A little help, closer to home.</h3><p>Ask a question or give a command. If an action needs permission, you will review it here before it runs.</p><div class="suggestions"><button class="suggestion" id="suggest-time" type="button">What time is it?</button><button class="suggestion" id="suggest-help" type="button">What can you help me with?</button></div></div></div>
+        <div id="request-status" class="request-status" role="status" aria-live="polite">Checking your server…</div>
+        <form id="composer" class="composer"><label for="command" class="sr-only">Your command</label><textarea id="command" rows="2" maxlength="12000" placeholder="Ask Jarvis anything, or give a command…" required></textarea><button id="send" class="primary send-button" type="submit" aria-label="Send command">Send <span aria-hidden="true">↗</span></button></form>
+        <div class="composer-foot"><span>Enter to send · Shift + Enter for a new line</span><span>Review before action.</span></div>
+      </section>
+      <noscript><p class="error-text">JavaScript is required for this console. Enable it to connect to Jarvis.</p></noscript>
+    </main>
+  </div>
+</body>
+</html>

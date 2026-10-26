@@ -1,0 +1,58 @@
+diff --git a/ufo/module/interactor.py b/ufo/module/interactor.py
+index 39af096..4ef4ac2 100644
+--- a/ufo/module/interactor.py
++++ b/ufo/module/interactor.py
+@@ -3,6 +3,8 @@
+ 
+ from .. import utils
+ 
++import os
++import sys
+ from art import text2art
+ from typing import Tuple
+ from rich.console import Console
+@@ -175,6 +177,25 @@ def question_asker(question: str, index: int) -> str:
+     return answer
+ 
+ 
++def _stdin_is_interactive() -> bool:
++    """Return True only when stdin is an attached, usable terminal."""
++    try:
++        if sys.stdin is None or not sys.stdin.isatty():
++            return False
++        if os.name == "nt":
++            # isatty() is True for NUL on Windows; require a real console handle.
++            import ctypes
++            from ctypes import wintypes
++
++            k32 = ctypes.windll.kernel32
++            k32.GetStdHandle.restype = wintypes.HANDLE
++            mode = wintypes.DWORD()
++            return bool(k32.GetConsoleMode(k32.GetStdHandle(-10), ctypes.byref(mode)))
++        return True
++    except (ValueError, OSError, AttributeError):
++        return False
++
++
+ def sensitive_step_asker(action, control_text) -> bool:
+     """
+     Ask for confirmation for sensitive steps.
+@@ -183,6 +204,18 @@ def sensitive_step_asker(action, control_text) -> bool:
+     :return: Whether to proceed.
+     """
+ 
++    # Non-interactive runs (stdin closed / not a TTY) must never block or crash on a
++    # prompt: deny by default, approve only with an explicit operator opt-in.
++    if not _stdin_is_interactive():
++        approved = os.environ.get("UFO_AUTO_APPROVE_SENSITIVE") == "1"
++        console.print(
++            Text(
++                f"Non-interactive sensitive step {'approved (UFO_AUTO_APPROVE_SENSITIVE=1)' if approved else 'denied'}: {action}",
++                style="dim",
++            )
++        )
++        return approved
++
+     # Create a warning panel for sensitive actions
+     warning_panel = Panel(
+         f"[bold red]⚠️  Security Confirmation Required[/bold red]\n\n"

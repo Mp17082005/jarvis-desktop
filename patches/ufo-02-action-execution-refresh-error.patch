@@ -1,0 +1,13 @@
+diff --git a/ufo/automator/action_execution.py b/ufo/automator/action_execution.py
+index b838beb..6b68bc4 100644
+--- a/ufo/automator/action_execution.py
++++ b/ufo/automator/action_execution.py
+@@ -106,7 +106,7 @@ class ActionExecutor:
+             control_selected
+         ):
+             raise ValueError(
+-                f"Control {control_id}: {action.target.name} is not available or not interactable for the action {action.action_representation()}, please refresh the application state to get the latest interactable control information."
++                f"Control {control_id}: {action.target.name} is not available or not interactable for the action {action.action_string or action.function}, please refresh the application state to get the latest interactable control information."
+             )
+ 
+         # Create the control receiver.

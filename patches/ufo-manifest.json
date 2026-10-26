@@ -1,0 +1,17 @@
+{
+  "repository": "https://github.com/microsoft/UFO",
+  "commit": "eae3c0a8d168c47cb10df0652e293e092eda1078",
+  "files": {
+    "ufo/module/interactor.py": {
+      "base_sha256": "25ee687f056bf40e5fbe8dd4b71b5b49fac25306811fac752ed97712a96ee5f9",
+      "patched_sha256": "ee603d9aa8446525bf39c6c80e22694c183b5fe076d0de499896a36ec0b373ce"
+    },
+    "ufo/automator/action_execution.py": {
+      "base_sha256": "e2f921207d6cc73d970e356722fa9e7e5d7148883937df8fccca8e888fbb8dd1",
+      "patched_sha256": "2e61a0d17933a55540322d48a22c2292d0c141ac07793699f1a6ae956a693a9a"
+    }
+  },
+  "requirements_relax": {
+    "pandas==1.4.3": "pandas>=2.0,<2.3"
+  }
+}

@@ -1,0 +1,59 @@
+name: Build Windows installer
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Unit tests (no network, no desktop)
+        shell: pwsh
+        run: |
+          uv sync --frozen --extra desktop --extra app --extra dev --python 3.12
+          uv run --frozen python -m pytest tests/test_desktop_agent.py tests/test_desktop_app_core.py tests/test_desktop_ufo_proxy_wiring.py tests/test_ufo.py tests/test_desktop_schedules.py -q -p no:cacheprovider
+
+      - name: Build release zip
+        shell: pwsh
+        run: ./installer/build_release.ps1
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Build Jarvis-Setup.exe
+        shell: pwsh
+        run: |
+          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { '0.0.0-dev' }
+          Expand-Archive dist/Jarvis-Setup.zip -DestinationPath dist -Force
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Q "/DAppVersion=$version" "/DSourceDir=$PWD\dist\Jarvis-Setup" installer\jarvis.iss
+          Get-ChildItem dist/*.exe, dist/*.zip | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_ -Algorithm SHA256).Hash, $_.Name } | Out-File dist/SHA256SUMS.txt -Encoding ascii
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: jarvis-installer
+          path: |
+            dist/*.exe
+            dist/Jarvis-Setup.zip
+            dist/SHA256SUMS.txt
+
+      - name: Publish GitHub release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.exe
+            dist/Jarvis-Setup.zip
+            dist/SHA256SUMS.txt
+          generate_release_notes: true

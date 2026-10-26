@@ -1,0 +1,1 @@
+the idea is to bui9ld jarvis where this will stay on always and can be accessed from other devices and till the device is on anyone calling jarvis it will wqqake up and say h9i and based on wht they say it shouold respond if they ak some question ikit should answwer if they ask you to do something you have to do it if you have access to those things
