@@ -4,7 +4,7 @@ Jarvis is a voice assistant for your PC. You talk, it answers and does tasks.
 This download is source code plus an installer, not a signed .exe. It needs no
 administrator rights and installs only into your own user account.
 
-INSTALL IN 5 STEPS
+INSTALL IN 5 STEPS  (with the .exe from the release page: just run it, then step 3)
 
 1. Extract
    Right-click Jarvis-Setup.zip and choose Extract All. Open the extracted
@@ -18,14 +18,18 @@ INSTALL IN 5 STEPS
    about 2 GB of disk space. If Windows SmartScreen asks, choose More info > Run anyway
    only if you trust where you got this ZIP.
 
-3. Enter your API key in the window that opens
-   Paste your AI provider's address (for OpenAI: https://api.openai.com/v1),
-   your API key and a model name, choose how careful Jarvis should be, and click Save.
-   The key is stored in Windows Credential Manager, never in a text file.
+3. Paste your API key and click Connect
+   In the window that opens, paste your API key. Jarvis recognises the provider
+   from the key (OpenAI, Claude, OpenRouter, Groq, Gemini, xAI) and fills in the
+   address and model. For Azure or another gateway, also paste the provider URL;
+   for local Ollama choose it under Provider (no key needed). Click Connect: it
+   runs a short test and saves. The key is stored in Windows Credential Manager,
+   never in a text file.
 
-4. Say "Jarvis"
-   Start Jarvis from the Start menu (Jarvis), then say
-   "Jarvis" and ask something, for example "Jarvis, what's the weather?"
+4. Talk to Jarvis
+   Start Jarvis from the Desktop or Start menu (Jarvis). Then say "Jarvis",
+   or press Ctrl+Alt+J anywhere, or click the Jarvis tray icon (Talk now),
+   and ask something, for example "what's the weather?"
 
 5. Done
    Keep talking without repeating "Jarvis". Say "that's all" to let it rest.

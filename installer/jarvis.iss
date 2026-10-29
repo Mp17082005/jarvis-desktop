@@ -37,7 +37,7 @@ CreateUninstallRegKey=yes
 UninstallFilesDir={localappdata}\Jarvis-Setup\uninst
 
 [Tasks]
-Name: "autostart"; Description: "Start Jarvis when I sign in to Windows"; Flags: unchecked
+Name: "autostart"; Description: "Start Jarvis when I sign in to Windows (recommended: it waits quietly for 'Jarvis' or Ctrl+Alt+J)"
 
 [Files]
 ; Unpack the release source to a staging folder; install_app.ps1 copies what it needs into {app}.
@@ -50,7 +50,7 @@ Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{localappdata}\Jarvis-Setup\src\scripts\install_app.ps1"" -Destination ""{app}"" {code:ExtraFlags}"; \
   StatusMsg: "Downloading and installing Jarvis (Python packages, Microsoft UFO, wake word). This takes 5-15 minutes..."; \
   Flags: waituntilterminated
-Filename: "{app}\Start-Jarvis.cmd"; Description: "Start Jarvis now"; Flags: postinstall nowait skipifsilent shellexec unchecked
+Filename: "{app}\Start-Jarvis.cmd"; Description: "Start Jarvis now"; Flags: postinstall nowait skipifsilent shellexec
 
 [UninstallRun]
 ; Run the uninstaller from the setup's own copy (outside {app}) so it can delete {app} entirely.

@@ -244,7 +244,8 @@ $info = [ordered]@{
 Write-TextFile $marker ($info | ConvertTo-Json)
 if (-not $NoShortcuts) {
     $shell = New-Object -ComObject WScript.Shell
-    $folders = @([Environment]::GetFolderPath('Programs'))
+    # Start menu + Desktop always (easy to find); Startup only with -AutoStart.
+    $folders = @([Environment]::GetFolderPath('Programs'), [Environment]::GetFolderPath('Desktop'))
     if ($AutoStart) { $folders += [Environment]::GetFolderPath('Startup') }
     foreach ($folder in $folders) {
         $path = Join-Path $folder 'Jarvis.lnk'
@@ -252,7 +253,7 @@ if (-not $NoShortcuts) {
         $lnk.TargetPath = Join-Path $dest 'Start-Jarvis.cmd'
         $lnk.WorkingDirectory = $dest
         $lnk.WindowStyle = 7
-        $lnk.Description = 'Jarvis voice assistant'
+        $lnk.Description = 'Jarvis voice assistant (say Jarvis or press Ctrl+Alt+J)'
         $lnk.Save()
         if (-not (Test-Path -LiteralPath $path)) { throw "Could not create shortcut $path" }
         Write-Host "Shortcut: $path"
@@ -276,5 +277,5 @@ elseif (-not (Test-Path -LiteralPath (Join-Path $app 'jarvis_desktop\__main__.py
 Write-Host ''
 foreach ($w in $warnings) { Write-Host "WARNING: $w" }
 Write-Host "Jarvis is installed in $dest"
-Write-Host "Start it from the Start menu (Jarvis) or double-click $(Join-Path $dest 'Start-Jarvis.cmd')."
-Write-Host 'Then say "Jarvis" and talk.'
+Write-Host "Start it from the Desktop or Start menu (Jarvis), or double-click $(Join-Path $dest 'Start-Jarvis.cmd')."
+Write-Host 'Then say "Jarvis" (or press Ctrl+Alt+J, or click the tray icon) and talk.'

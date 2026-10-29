@@ -14,12 +14,29 @@ options, safety levels, privacy, troubleshooting and removal.
   LiteLLM, OpenRouter, local servers that speak `/v1/chat/completions`).
 - No administrator rights. Nothing is added to `PATH`; no services or scheduled tasks are registered.
 
-## Quick install
+## Quick install (3 steps)
 
-1. Extract `Jarvis-Setup.zip` (right-click > Extract All).
-2. Double-click `Install-Jarvis.cmd` and keep the window open.
-3. In the setup window, enter the provider base URL, API key and chat model, pick an autonomy level, Save.
-4. Start "Jarvis" from the Start menu and say "Jarvis".
+1. **Download and run** `Jarvis-Setup-<version>.exe` from the GitHub Releases page (or extract
+   `Jarvis-Setup.zip` and double-click `Install-Jarvis.cmd`). Wait while it downloads its packages.
+2. **Paste your API key** into the setup window. Jarvis recognises the provider from the key
+   (OpenAI `sk-…`, Claude `sk-ant-…`, OpenRouter `sk-or-…`, Groq `gsk_…`, Gemini `AIza…`, xAI `xai-…`),
+   fills in the address and a default model, and lists the models your key can use. For Azure or another
+   gateway, also paste the provider URL; for local Ollama pick it from *Provider* (no key needed).
+3. **Click Connect.** Jarvis sends one short test message and one tool-call test; when both work it saves
+   and closes. If the test fails you see the reason and can fix it, or click *Save anyway*.
+
+Then talk to Jarvis in any of three ways:
+
+- say **"Jarvis"**,
+- press **Ctrl+Alt+J** anywhere (global shortcut; change it with `"hotkey"` in `settings.json`,
+  e.g. `"win+shift+space"`. If another program already uses the combination, Jarvis logs that and the
+  other two ways still work),
+- or click the Jarvis **tray icon** (left-click = *Talk now*).
+
+The installer starts Jarvis when you sign in (checked by default; untick *Start Jarvis when I sign in*
+to opt out) and creates **Jarvis** shortcuts on the Desktop and in the Start menu.
+*Advanced* in the setup window holds the voice model, voice name and the auto-filled URL; the
+safety level defaults to *Balanced*.
 
 ## What the installer does
 
@@ -67,8 +84,8 @@ Pass them after the file name, e.g. from a terminal: `Install-Jarvis.cmd -AutoSt
 | Option | Effect |
 | --- | --- |
 | `-Destination <folder>` | Install elsewhere (default `%LOCALAPPDATA%\Jarvis`). |
-| `-AutoStart` | Also start Jarvis when you sign in (Startup folder shortcut). |
-| `-NoShortcuts` | Create no shortcuts. |
+| `-AutoStart` | Also start Jarvis when you sign in (Startup folder shortcut). The `.exe` installer passes this unless you untick it. |
+| `-NoShortcuts` | Create no shortcuts (default: Start menu and Desktop). |
 | `-NoUfo` | Skip Microsoft UFO (saves ~1.5 GB; general "do X in app Y" tasks unavailable; YouTube, open app, spreadsheets, research still work). |
 | `-SkipModels` | Skip the wake model download. |
 | `-NoSetup` | Do not open the setup window (run `Start-Jarvis.cmd --setup` later). |
@@ -89,7 +106,7 @@ Re-running after a failed install continues where it stopped.
 - `Start-Jarvis.cmd` (or the Start menu entry) runs the app. `Start-Jarvis.cmd --setup` changes settings,
   `--doctor` prints a readiness check (never prints secrets), `--text "what time is it"` runs one
   request without the microphone.
-- Say "Jarvis", then talk. Follow-ups need no wake word until about 20 seconds of silence or
+- Say "Jarvis", press Ctrl+Alt+J, or click the tray icon, then talk. Follow-ups need no wake word until about 20 seconds of silence or
   "that's all". Saying "stop" while Jarvis speaks interrupts it.
 
 ## Autonomy levels
@@ -127,15 +144,16 @@ own voice can never approve anything.
 | "differs from pinned commit; refusing to overwrite" | The UFO folder was edited. Delete `%LOCALAPPDATA%\Jarvis\ufo` and rerun. |
 | Wake model size mismatch | Download was cut off. Rerun, or install with `-SkipModels` and place the model in the `models` folder yourself. |
 | Jarvis does not hear "Jarvis" | Windows Settings > Privacy > Microphone: allow desktop apps. Check the default input device. Run `Start-Jarvis.cmd --doctor`. |
-| Wrong key / provider errors | `Start-Jarvis.cmd --setup` and re-enter the key. |
+| Wrong key / provider errors | `Start-Jarvis.cmd --setup` (or tray > Settings), paste the key again, click Connect. |
+| Ctrl+Alt+J does nothing | Another program owns that shortcut. Set `"hotkey"` in `%LOCALAPPDATA%\\Jarvis\\settings.json` (e.g. `"ctrl+alt+shift+j"`) and restart Jarvis; saying "Jarvis" or the tray icon still works. |
 | Desktop tasks fail | UFO needs an unlocked, visible desktop session (not a locked screen or disconnected RDP). |
 | Shortcut missing | Rerun installer without `-NoShortcuts`. |
 
 ## Uninstall
 
 Double-click `Uninstall-Jarvis.cmd` (in the extracted folder or in `%LOCALAPPDATA%\Jarvis`), answer `Y`.
-It stops Jarvis processes running from the install folder, removes the Start menu and Startup
-shortcuts, deletes the saved API key from Windows Credential Manager, and deletes the whole install
+It stops Jarvis processes running from the install folder, removes the Start menu, Desktop and Startup
+shortcuts that point to this install, deletes the saved API key from Windows Credential Manager, and deletes the whole install
 folder (app, UFO, models, settings, data, logs). Nothing is kept. uv's download cache
 (`%LOCALAPPDATA%\uv\cache`) is shared with other tools and is not removed; delete it manually if wanted.
 

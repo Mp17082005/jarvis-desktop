@@ -72,6 +72,7 @@ class VoiceApp:
         self._reply = ""
         self._announcements: queue.Queue = queue.Queue()
         self._quit = threading.Event()
+        self._manual_wake = threading.Event()  # set by wake_now() from any thread (hotkey, tray)
         agent.on_event(self.announce)
 
     # ---- public controls (any thread)
@@ -87,6 +88,24 @@ class VoiceApp:
             except Exception:
                 pass
         self._notify()
+
+    def wake_now(self) -> bool:
+        """Thread-safe 'as if the wake word fired' (global hotkey / tray). Ignored while paused.
+
+        IDLE: the next step chimes, flushes the mic and starts LISTENING. SPEAKING: stops the reply so the
+        user can talk. LISTENING: restarts the follow-up window. Returns False when ignored."""
+        if self.paused or self._quit.is_set():
+            return False
+        if self.state is State.SPEAKING:
+            try:
+                self.speaker.interrupt()
+            except Exception:
+                pass
+        elif self.state is State.LISTENING:
+            self._deadline = self.clock() + self.follow_up_seconds
+            return True
+        self._manual_wake.set()
+        return True
 
     def quit(self):
         self._quit.set()
@@ -135,6 +154,7 @@ class VoiceApp:
             spoke = True
 
     def _to_idle(self):
+        self._manual_wake.clear()
         try:
             self.mic.close()
         except Exception:
@@ -149,6 +169,7 @@ class VoiceApp:
 
     def _step_idle(self):
         if self.paused:
+            self._manual_wake.clear()  # a press while paused is ignored, never replayed on resume
             if self._wake_on:
                 self._wake_stop()
             self.sleep(0.2)
@@ -158,8 +179,11 @@ class VoiceApp:
             if was_on:
                 self._wake_stop()  # never let our own voice trigger the wake word
             self._drain_announcements()
-        self._wake_start()
-        if self.wake.pop_event():
+        manual = self._manual_wake.is_set()
+        if not manual:
+            self._wake_start()
+        if manual or self.wake.pop_event():
+            self._manual_wake.clear()
             self._wake_stop()
             chime = getattr(self.speaker, "chime", None)
             if chime:
@@ -207,6 +231,12 @@ class VoiceApp:
         self._set(State.THINKING)
 
     def _step_thinking(self):
+        warm = getattr(self.speaker, "warm_up", None)
+        if warm:  # open the TTS connection while the model thinks: the reply's first chunk skips TLS setup
+            try:
+                warm()
+            except Exception:
+                pass
         result = {}
         done = threading.Event()
 
@@ -360,9 +390,10 @@ def build_and_run(settings, use_tray=True, offline_tts=False) -> int:
     model = config.wake_model_path(settings)
     wake = WakeController(model_path=model)
     status = wake.status()
-    if not status["available"]:
+    wake_ok = bool(status["available"])
+    if not wake_ok:
         print(f"Wake word unavailable ({status['reason']}). Run: python -m jarvis_desktop --doctor", file=sys.stderr)
-        return 3
+        wake = _NoWake()
     confirm = SpokenConfirm(speak=lambda q: speaker.say(q, block=True),
                             listen=lambda timeout: mic.listen(timeout=timeout, max_seconds=8),
                             transcribe=stt.transcribe, before_listen=mic.flush)
@@ -378,23 +409,72 @@ def build_and_run(settings, use_tray=True, offline_tts=False) -> int:
         log.warning("microphone calibration failed; continuing")
     app = VoiceApp(agent=agent, speaker=speaker, mic=mic, stt=stt, wake=wake)
     holder["app"] = app
+    combo = getattr(settings, "hotkey", "") or "ctrl+alt+j"
+    hotkey, hotkey_label = _start_hotkey(app, combo)
+    if not wake_ok and hotkey is None:
+        agent.close()
+        return 3
     tray = None
-    if use_tray:
-        from .tray import start_tray
-        tray = start_tray(app)
-    print("Jarvis is ready. Say 'Jarvis' to start." + ("" if tray else " (Ctrl+C to quit)"))
     try:
+        if use_tray:
+            from .tray import start_tray
+            tray = start_tray(app)
+        if wake_ok:
+            ready = "Jarvis is ready. Say 'Jarvis' to start."
+            if hotkey is not None:
+                ready += f" Or press {hotkey_label} to talk."
+        else:
+            ready = f"Jarvis is ready (hotkey only). Press {hotkey_label} to talk."
+        print(ready + ("" if tray else " (Ctrl+C to quit)"))
+        sys.stdout.flush()
         app.run()
     except KeyboardInterrupt:
         app.quit()
     finally:
         agent.close()
-        if tray:
-            try:
-                tray.stop()
-            except Exception:
-                pass
+        for stop in (getattr(hotkey, "stop", None), getattr(tray, "stop", None), getattr(speaker, "close", None)):
+            if stop is not None:
+                try:
+                    stop()
+                except Exception:
+                    pass
     return 0
+
+
+class _NoWake:
+    """Stand-in wake detector for hotkey-only mode (no Vosk model / no wake microphone)."""
+
+    def start(self):
+        return False
+
+    def stop(self):
+        pass
+
+    def pop_event(self):
+        return False
+
+    def status(self):
+        return {"available": False, "listening": False, "reason": "hotkey_only", "local_only": True}
+
+
+def _start_hotkey(app, combo):
+    """Register the global push-to-talk hotkey -> app.wake_now. Never fatal: (handle or None, label)."""
+    label = "Ctrl+Alt+J"
+    try:
+        import importlib
+        hotkey_mod = importlib.import_module(".hotkey", __package__)
+        try:
+            label = hotkey_mod.label(combo)
+        except Exception:
+            pass
+        handle = hotkey_mod.start_hotkey(app.wake_now, combo)
+    except ImportError:
+        log.info("hotkey module unavailable; wake word only")
+        return None, label
+    except Exception:
+        log.exception("hotkey could not be started; continuing without it")
+        return None, label
+    return handle, label
 
 
 def print_json(obj):

@@ -46,12 +46,13 @@ class Settings:
     tts_model: str = "tts-1"
     tts_voice: str = "alloy"
     stt_mode: str = "local"
-    stt_model: str = "base"
+    stt_model: str = "tiny"  # tiny.en ~0.4 s per phrase on a 4-core CPU vs ~1 s for base.en; same words in tests
     autonomy: str = "balanced"
     wake_word: str = "jarvis"
     wake_model_path: str = ""
     language: str = "en"
-    start_with_windows: bool = False
+    start_with_windows: bool = True
+    hotkey: str = "ctrl+alt+j"  # global "talk now" shortcut (see hotkey.py)
 
     def normalized(self) -> "Settings":
         d = Settings()
@@ -63,6 +64,8 @@ class Settings:
         if self.stt_model not in ("tiny", "base", "small"):
             self.stt_model = d.stt_model
         self.start_with_windows = bool(self.start_with_windows)
+        from .hotkey import normalize as _normalize_hotkey
+        self.hotkey = _normalize_hotkey(self.hotkey) or d.hotkey
         for f in ("provider", "chat_model", "tts_model", "tts_voice", "wake_word", "language", "wake_model_path"):
             value = getattr(self, f)
             setattr(self, f, str(value).strip() if value is not None else getattr(d, f))

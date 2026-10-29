@@ -91,6 +91,12 @@ _SHORTCUTS = [
 ]
 _PLAY_REQUEST = re.compile(r'^\s*(?:play|put on|start playing)\s+(.{1,180}?)(?:\s+(?:on|in|from)\s+youtube)?\s*[.!]?$', re.I)
 _OPEN_REQUEST = re.compile(r'^\s*(?:open|launch|start)\s+(?:the\s+)?(chrome|edge|excel|notepad|calculator|explorer|file explorer)(?:\s+app)?\s*[.!]?$', re.I)
+# Spoken "play ..." handled without the model (see Agent._play_shortcut).
+_SPOKEN_PLAY = re.compile(r'^\s*(?:jarvis[,.!]?\s+)?(?:please\s+)?(?:can you\s+|could you\s+)?(?:play|put on|start playing)\s+'
+                          r'(?P<query>.{1,200}?)(?P<yt>\s+(?:on|in|from)\s+you\s?tube)?\s*(?:please)?\s*[.!?]?\s*$', re.I)
+_MEDIA_WORDS = re.compile(r'\b(music|songs?|video|playlist|lo-?fi|podcast|album|jazz|rock|pop|hip hop|rap|classical|'
+                          r'sounds?|beats|mix|by\s+\w+)\b', re.I)
+_NOT_MEDIA = re.compile(r'\b(netflix|spotify|prime|hotstar|voicemail|chess|game|games|episode|my (?:messages?|voicemail))\b', re.I)
 
 
 def fast_route(name, args):
@@ -271,7 +277,31 @@ class Agent:
             self.memory.add('assistant', reply)
             return reply
 
+    def _play_shortcut(self, utterance):
+        """'Play X (on YouTube)' -> youtube_play directly, skipping two LLM round trips.
+
+        Only for unambiguous media requests; anything else (other apps, 'play chess') goes to the model.
+        On failure returns None so the model explains it (e.g. YouTube asking to sign in)."""
+        m = _SPOKEN_PLAY.match(utterance)
+        if not m:
+            return None
+        query = m.group('query').strip().rstrip('.!?').strip()
+        if not query or _NOT_MEDIA.search(query) or (not m.group('yt') and not _MEDIA_WORDS.search(query)):
+            return None
+        args = {'query': query[:200]}
+        if needs_confirmation('youtube_play', args, self.cfg.get('autonomy')):
+            return None  # careful mode: normal path with a read-back
+        result = self.tools.execute('youtube_play', args)
+        self.last_tool_calls = [('youtube_play', args, True)]
+        if result.get('ok'):
+            title = speech_safe(str(result.get('title') or '')).strip()
+            return f'Playing {title}.' if title else f'Playing {query}.'
+        return None
+
     def _shortcut(self, utterance):
+        played = self._play_shortcut(utterance)
+        if played is not None:
+            return played
         for pattern, (action, spoken) in _SHORTCUTS:
             if pattern.match(utterance):
                 args = {'action': action}

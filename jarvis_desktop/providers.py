@@ -230,6 +230,22 @@ class Provider:
             message["tool_calls"] = calls
         return message
 
+    # ------------------------------------------------------------- models
+    def list_models(self) -> list[str]:
+        """Model ids the key can see (GET {base}/models). Raises ProviderError / httpx errors."""
+        r = self.client.get(self.url("/models"), headers=self.headers())
+        self._raise_for(r)
+        data = r.json()
+        items = data.get("data") if isinstance(data, dict) else None
+        if items is None and isinstance(data, dict):
+            items = data.get("models")  # some gateways
+        out = []
+        for m in items or []:
+            mid = m.get("id") or m.get("name") if isinstance(m, dict) else m
+            if isinstance(mid, str) and mid:
+                out.append(mid.removeprefix("models/"))
+        return out
+
     # ------------------------------------------------------------- speech
     def speech(self, model: str, voice: str, text: str) -> bytes:
         """OpenAI-style TTS where the provider offers it; raises ProviderError otherwise."""

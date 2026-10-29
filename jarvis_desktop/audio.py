@@ -2,7 +2,7 @@
 
 * Capture: sounddevice 16 kHz mono float32 (injectable ``read_frame`` for tests / no-mic machines).
 * Endpointing: frame RMS vs an adaptive noise floor (minimum statistics), calibrated on ~1 s of room
-  audio. An utterance ends after 900 ms below threshold, is capped at 30 s, and voiced spans shorter
+  audio. An utterance ends after 700 ms below threshold (JARVIS_END_SILENCE_MS), is capped at 30 s, and voiced spans shorter
   than 0.3 s (clicks, coughs) are discarded.
 * Decoding: WAV via the stdlib, everything else (mp3/ogg/...) via PyAV, which faster-whisper already
   depends on, so no extra decoder dependency.
@@ -26,6 +26,19 @@ import numpy as np
 SAMPLE_RATE = 16000
 
 
+def _end_silence_default() -> int:
+    """700 ms keeps phrases with natural 300-500 ms inter-word pauses whole (tests/test_latency.py) while
+    answering 200 ms sooner than the old 900 ms. JARVIS_END_SILENCE_MS overrides it (200-3000)."""
+    try:
+        value = int(os.getenv("JARVIS_END_SILENCE_MS", ""))
+    except ValueError:
+        return 700
+    return value if 200 <= value <= 3000 else 700
+
+
+END_SILENCE_MS = _end_silence_default()
+
+
 def rms(x: np.ndarray) -> float:
     if x.size == 0:
         return 0.0
@@ -35,11 +48,13 @@ def rms(x: np.ndarray) -> float:
 class Endpointer:
     """Streaming utterance segmentation by RMS energy with an adaptive noise floor."""
 
-    def __init__(self, sample_rate=SAMPLE_RATE, frame_ms=30, end_silence_ms=900, max_seconds=30.0,
+    def __init__(self, sample_rate=SAMPLE_RATE, frame_ms=30, end_silence_ms=None, max_seconds=30.0,
                  min_speech_seconds=0.3, preroll_ms=300, tail_ms=300, ratio=3.0, min_threshold=0.002,
                  start_frames=3, idle_window_s=1.5, speech_window_s=3.0):
         self.sr = sample_rate
         self.frame = int(sample_rate * frame_ms / 1000)
+        if end_silence_ms is None:
+            end_silence_ms = END_SILENCE_MS
         self.end_frames = max(1, int(end_silence_ms / frame_ms))
         self.max_frames = int(max_seconds * 1000 / frame_ms)
         self.min_voiced_frames = int(min_speech_seconds * 1000 / frame_ms)

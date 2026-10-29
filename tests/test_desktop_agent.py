@@ -114,6 +114,43 @@ def test_player_shortcut_skips_llm(tmp_path):
     assert llm.requests == [] and [c[1]['action'] for c in tb.calls] == ['pause', 'skip_ad']
 
 
+@pytest.mark.parametrize('said,query', [
+    ('Play some lofi music on YouTube', 'some lofi music'),
+    ('Jarvis, play Believer by Imagine Dragons.', 'Believer by Imagine Dragons'),
+    ('play rain sounds on youtube', 'rain sounds'),
+    ('put on some jazz', 'some jazz'),
+])
+def test_play_request_starts_youtube_without_llm(tmp_path, said, query):
+    # Two LLM round trips (~3.5 s) used to precede every play request.
+    a, llm, tb, asked = make(tmp_path, [])
+    reply = a.handle(said)
+    assert llm.requests == [] and asked == []
+    assert tb.calls == [('youtube_play', {'query': query}, 'user')]
+    assert reply.startswith('Playing')
+
+
+@pytest.mark.parametrize('said', ['play the next episode in Netflix', 'play my voicemail', 'play chess with me',
+                                  'what should I play tonight'])
+def test_non_youtube_play_requests_still_go_to_the_model(tmp_path, said):
+    a, llm, tb, _ = make(tmp_path, ['Sure.'])
+    a.handle(said)
+    assert len(llm.requests) == 1
+
+
+def test_play_shortcut_failure_lets_the_model_explain(tmp_path):
+    a, llm, tb, _ = make(tmp_path, ["YouTube wants you to sign in first."])
+    tb.execute = lambda name, args, source='user': (tb.calls.append((name, args, source)),
+                                                    {'ok': False, 'error': 'human_required'})[1]
+    assert a.handle('play lofi on youtube') == "YouTube wants you to sign in first."
+    assert len(llm.requests) == 1
+
+
+def test_careful_mode_play_still_confirms(tmp_path):
+    a, llm, tb, asked = make(tmp_path, [[('youtube_play', {'query': 'jazz'})], 'Okay.'], autonomy='careful', answers=[False])
+    a.handle('play jazz on youtube')
+    assert asked and tb.calls == []
+
+
 def test_parallel_fast_tools_in_one_step(tmp_path):
     a, _, tb, _ = make(tmp_path, [[('weather', {'city': 'Pune'}), ('time', {})], 'Sunny, 10 30.'])
     a.handle('weather in pune and the time')

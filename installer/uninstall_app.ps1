@@ -15,7 +15,7 @@ if (-not (Test-Path -LiteralPath $marker)) {
     exit 1
 }
 Write-Host "This removes Jarvis completely from $dest :"
-Write-Host ' - Start menu and startup shortcuts'
+Write-Host ' - Start menu, Desktop and startup shortcuts'
 Write-Host ' - your saved API key in Windows Credential Manager'
 Write-Host ' - settings, conversation data, models, Microsoft UFO and the app itself'
 if (-not $Yes) {
@@ -31,7 +31,7 @@ Start-Sleep -Milliseconds 500
 if (-not $KeepShortcuts) {
     $target = Join-Path $dest 'Start-Jarvis.cmd'
     $shell = New-Object -ComObject WScript.Shell
-    foreach ($folder in @([Environment]::GetFolderPath('Programs'), [Environment]::GetFolderPath('Startup'))) {
+    foreach ($folder in @([Environment]::GetFolderPath('Programs'), [Environment]::GetFolderPath('Startup'), [Environment]::GetFolderPath('Desktop'))) {
         $path = Join-Path $folder 'Jarvis.lnk'
         if (Test-Path -LiteralPath $path) {
             if ($shell.CreateShortcut($path).TargetPath -ieq $target) { Remove-Item -LiteralPath $path -Force; Write-Host "Removed shortcut $path" }

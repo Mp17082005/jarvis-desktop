@@ -37,7 +37,17 @@ def start_tray(app):
         app.quit()
         icon.stop()
 
+    items = []
+    if callable(getattr(app, "wake_now", None)):
+        from .hotkey import DEFAULT, label
+        combo = getattr(getattr(app, "settings", None), "hotkey", None) or DEFAULT
+
+        def talk(icon, item):
+            app.wake_now()
+        # default=True: a left-click on the tray icon starts listening right away.
+        items.append(pystray.MenuItem(f"Talk now ({label(combo)})", talk, default=True))
     menu = pystray.Menu(
+        *items,
         pystray.MenuItem(lambda item: app.status_text, None, enabled=False),
         pystray.MenuItem(lambda item: "Resume listening" if app.paused else "Pause listening", toggle),
         pystray.MenuItem("Settings", settings),

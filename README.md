@@ -9,8 +9,10 @@ You bring your own AI key (OpenAI or any OpenAI-compatible provider). There is n
 1. Go to **[Releases](../../releases/latest)** and download **`Jarvis-Setup-<version>.exe`**.
 2. Run it. Windows may show *"Windows protected your PC"* because the installer is not code-signed yet — click **More info → Run anyway** if you trust this repository.
 3. Wait 5–15 minutes while it downloads its Python packages, Microsoft UFO and the offline wake-word model (about 2 GB). No administrator rights are needed; everything goes into your user folder.
-4. In the window that opens, paste your provider address (OpenAI: `https://api.openai.com/v1`), your API key and a model name, choose a safety level, click **Test**, then **Save**. The key is stored in Windows Credential Manager, never in a file.
-5. Start **Jarvis** from the Start menu and say **"Jarvis"**.
+4. In the window that opens, **paste your API key** and click **Connect**. Jarvis recognises the provider from the key (OpenAI, Claude, OpenRouter, Groq, Gemini, xAI), fills in the address and model, runs a quick chat + tool test and saves. Azure or other gateways: also paste the provider URL. Local Ollama: choose it under *Provider*; no key needed. The key is stored in Windows Credential Manager, never in a file.
+5. Jarvis starts when you sign in (you can untick that in the installer) and has **Jarvis** shortcuts on the Desktop and in the Start menu.
+
+**To talk:** say **"Jarvis"**, press **Ctrl+Alt+J** anywhere, or click the tray icon (*Talk now*).
 
 Uninstall from **Settings → Apps → Jarvis**; this also removes the saved key.
 
@@ -22,6 +24,7 @@ Prefer not to run an .exe? Download `Jarvis-Setup.zip` from the same release, ex
 
 | Say | What happens |
 |---|---|
+| *Ctrl+Alt+J* or tray *Talk now* | Starts listening without the wake word |
 | "Jarvis, play lofi hip hop on YouTube" | Opens YouTube, plays it, skips skippable ads |
 | "pause" / "resume" / "skip the ad" | Instant player control |
 | "open Excel" / "open github.com" | Opens it immediately |

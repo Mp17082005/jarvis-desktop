@@ -1,10 +1,14 @@
 """Speech-to-text: local faster-whisper (default) or provider /audio/transcriptions.
 
-Local models are cached in %LOCALAPPDATA%/Jarvis/models and run on CPU with int8.
-In provider mode a failed request falls back to the local model.
+Local models are cached in %LOCALAPPDATA%/Jarvis/models and run on CPU with int8 on up to 8 threads.
+When the language is English the English-only ``.en`` variant of the chosen size is used (same speed
+class, better English accuracy); greedy decoding, no timestamps, no VAD (the endpointer already trimmed
+the clip). In provider mode a failed request falls back to the local model.
 """
 from __future__ import annotations
 
+import logging
+import os
 import threading
 
 import httpx
@@ -13,13 +17,36 @@ import numpy as np
 from .audio import SAMPLE_RATE, to_wav_bytes
 
 
+log = logging.getLogger("jarvis_desktop")
+
+# Biases the decoder toward words people say to an assistant (proper nouns small models mishear,
+# e.g. "lofi" -> "low-five"). It is context only, not a transcript; costs no measurable time.
+VOCAB_HINT = ("Jarvis, open Notepad, Excel, Chrome, YouTube, play lofi music, skip the ad, "
+              "spreadsheet, WhatsApp, Gmail, schedule, remind me.")
+
+
+def _is_english(language) -> bool:
+    lang = (language or "").strip().lower()
+    return lang == "en" or lang.startswith(("en-", "en_"))
+
+
+def cpu_threads() -> int:
+    return max(1, min(os.cpu_count() or 4, 8))
+
+
 class LocalWhisper:
     def __init__(self, model_size="base", download_root=None, language=None):
         self.model_size = model_size if model_size in ("tiny", "base", "small") else "base"
         self.download_root = download_root
         self.language = language
+        self.model_name = None   # the model actually loaded (e.g. "base.en")
         self._model = None
         self._lock = threading.Lock()
+
+    def _candidates(self):
+        if _is_english(self.language):
+            return [self.model_size + ".en", self.model_size]
+        return [self.model_size]
 
     def load(self):
         with self._lock:
@@ -29,16 +56,31 @@ class LocalWhisper:
                 if root is None:
                     from .config import models_dir
                     root = str(models_dir() / "whisper")
-                self._model = WhisperModel(self.model_size, device="cpu", compute_type="int8", download_root=root)
+                last = None
+                for name in self._candidates():
+                    try:
+                        self._model = WhisperModel(name, device="cpu", compute_type="int8", cpu_threads=cpu_threads(),
+                                                   download_root=root)
+                        self.model_name = name
+                        break
+                    except Exception as exc:  # e.g. .en model not cached and offline: use the multilingual one
+                        last = exc
+                        log.warning("speech model %s unavailable (%s)", name, type(exc).__name__)
+                if self._model is None:
+                    raise last
         return self._model
 
     def transcribe(self, pcm: np.ndarray) -> str:
         if pcm is None or len(pcm) < SAMPLE_RATE * 0.2:
             return ""
         model = self.load()
-        lang = self.language if self.language and self.language not in ("auto", "") else None
+        if _is_english(self.language):
+            lang = "en"
+        else:
+            lang = self.language if self.language and self.language not in ("auto", "") else None
         segments, _ = model.transcribe(np.asarray(pcm, np.float32), language=lang, beam_size=1,
-                                       vad_filter=False, condition_on_previous_text=False)
+                                       vad_filter=False, condition_on_previous_text=False,
+                                       without_timestamps=True, initial_prompt=VOCAB_HINT if lang in (None, "en") else None)
         return " ".join(s.text.strip() for s in segments).strip()
 
 
